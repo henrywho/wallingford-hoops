@@ -40,25 +40,13 @@ using (var service = new SheetsService(new BaseClientService.Initializer()
 
     getSpreadsheetRequest.IncludeGridData = true;
     getSpreadsheetRequest.Ranges = rangesForSheetsWithGameData;
-    var sheetsWithGameData = getSpreadsheetRequest
-        .Execute()
-        .Sheets;
+    var spreadsheetWithGameData = getSpreadsheetRequest
+        .Execute();
 
-    Console.WriteLine("All sheets with game data:");
-    foreach (var sheet in sheetsWithGameData)
-    {
-        var gameDate = sheet.Properties.Title;
-        var gridData = sheet.Data[0];
-        Console.WriteLine(gameDate);
+    // PrintGamesFromSpreadsheet(spreadsheetWithGameData);
+    // PrintRowDataAndGameRowDataFromSpreadsheet(spreadsheetWithGameData);
 
-        PrintGames(gameDate, gridData);
-
-        // PrintRowDataAndGameRowData(gridData, gameDate);
-
-        Console.WriteLine();
-    }
-
-    var games = GetAllGamesFromSpreadsheet(sheetsWithGameData);
+    var games = GetAllGamesFromSpreadsheet(spreadsheetWithGameData);
 
     var henryGamesWon = from game in games
                         where game.Winners.Contains("Henry")
@@ -99,6 +87,51 @@ using (var service = new SheetsService(new BaseClientService.Initializer()
     Console.WriteLine("Time taken : {0}", stopwatch.Elapsed);
 }
 
+static IList<Game> GetAllGamesFromSpreadsheet(Spreadsheet spreadsheet)
+{
+    var games = new List<Game>();
+    foreach (var sheet in spreadsheet.Sheets)
+    {
+        var gameDate = sheet.Properties.Title;
+        var gridData = sheet.Data[0];
+
+        var gameGridData = GameGridData.LoadFromGridData(gridData, gameDate);
+        games.AddRange(gameGridData.Games);
+    }
+
+    return games;
+}
+
+static void PrintRowDataAndGameRowDataFromSpreadsheet(Spreadsheet spreadsheet)
+{
+    Console.WriteLine("Printing all row data and game row data:");
+    foreach (var sheet in spreadsheet.Sheets)
+    {
+        var gameDate = sheet.Properties.Title;
+        var gridData = sheet.Data[0];
+        Console.WriteLine(gameDate);
+
+        PrintRowDataAndGameRowData(gridData, gameDate);
+
+        Console.WriteLine();
+    }
+}
+
+static void PrintGamesFromSpreadsheet(Spreadsheet spreadsheet)
+{
+    Console.WriteLine("Printing all games:");
+    foreach (var sheet in spreadsheet.Sheets)
+    {
+        var gameDate = sheet.Properties.Title;
+        var gridData = sheet.Data[0];
+        Console.WriteLine(gameDate);
+
+        PrintGames(gameDate, gridData);
+
+        Console.WriteLine();
+    }
+}
+
 static void PrintRowDataAndGameRowData(GridData gridData, string gameDate)
 {
     foreach (var rowData in gridData.RowData)
@@ -124,19 +157,4 @@ static void PrintGames(string gameDate, GridData gridData)
         Console.WriteLine($"game.Losers: {string.Join(",", game.Losers)}");
         Console.WriteLine();
     }
-}
-
-static IList<Game> GetAllGamesFromSpreadsheet(IList<Sheet> spreadsheet)
-{
-    var games = new List<Game>();
-    foreach (var sheet in spreadsheet)
-    {
-        var gameDate = sheet.Properties.Title;
-        var gridData = sheet.Data[0];
-
-        var gameGridData = GameGridData.LoadFromGridData(gridData, gameDate);
-        games.AddRange(gameGridData.Games);
-    }
-
-    return games;
 }
