@@ -17,7 +17,7 @@ namespace WallingfordHoops
         public static GameRowData LoadFromRowData(RowData rowData, string gameDate)
         {
             var rowValues = rowData.Values.Select(cellData => cellData.FormattedValue).ToList();
-            var player = rowValues[0];
+            var player = rowValues[0].Trim();
             var gameRowData = new GameRowData(player);
 
             for (int i = 3; i < rowValues.Count; i++)

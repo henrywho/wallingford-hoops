@@ -7,9 +7,11 @@ namespace WallingfordHoops
         public GameGridData()
         {
             Games = new List<Game>();
+            Players = new List<string>();
         }
 
         public IList<Game> Games { get; set; }
+        public IList<string> Players { get; set; }
 
         public void InsertWinnerIntoGame(string player, string gameId)
         {
@@ -45,6 +47,9 @@ namespace WallingfordHoops
                 }
 
                 var gameRowData = GameRowData.LoadFromRowData(rowData, gameDate);
+
+                gameGridData.Players.Add(gameRowData.Player);
+
                 foreach (var gameId in gameRowData.GamesWon)
                 {
                     gameGridData.InsertWinnerIntoGame(gameRowData.Player, gameId);

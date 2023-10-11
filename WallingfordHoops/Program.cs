@@ -46,7 +46,7 @@ using (var service = new SheetsService(new BaseClientService.Initializer()
     // PrintGamesFromSpreadsheet(spreadsheetWithGameData);
     // PrintRowDataAndGameRowDataFromSpreadsheet(spreadsheetWithGameData);
 
-    var games = GetAllGamesFromSpreadsheet(spreadsheetWithGameData);
+    var games = GetGamesFromSpreadsheet(spreadsheetWithGameData);
 
     var henryGamesWon = from game in games
                         where game.Winners.Contains("Henry")
@@ -82,12 +82,20 @@ using (var service = new SheetsService(new BaseClientService.Initializer()
 
     Console.WriteLine();
 
+    var players = GetPlayersFromSpreadsheet(spreadsheetWithGameData);
+
+    Console.WriteLine($"Number of players: {players.Count}");
+    foreach (var player in players)
+    {
+        Console.WriteLine(player);
+    }
+
     // Stop timing
     stopwatch.Stop();
     Console.WriteLine("Time taken : {0}", stopwatch.Elapsed);
 }
 
-static IList<Game> GetAllGamesFromSpreadsheet(Spreadsheet spreadsheet)
+static IList<Game> GetGamesFromSpreadsheet(Spreadsheet spreadsheet)
 {
     var games = new List<Game>();
     foreach (var sheet in spreadsheet.Sheets)
@@ -100,6 +108,24 @@ static IList<Game> GetAllGamesFromSpreadsheet(Spreadsheet spreadsheet)
     }
 
     return games;
+}
+
+static IList<string> GetPlayersFromSpreadsheet(Spreadsheet spreadsheet)
+{
+    var players = new SortedSet<string>();
+    foreach (var sheet in spreadsheet.Sheets)
+    {
+        var gameDate = sheet.Properties.Title;
+        var gridData = sheet.Data[0];
+
+        var gameGridData = GameGridData.LoadFromGridData(gridData, gameDate);
+        foreach (var player in gameGridData.Players)
+        {
+            players.Add(player);
+        }
+    }
+
+    return players.ToList();
 }
 
 static void PrintRowDataAndGameRowDataFromSpreadsheet(Spreadsheet spreadsheet)
