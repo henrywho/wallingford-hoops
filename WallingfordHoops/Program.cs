@@ -30,7 +30,7 @@ using (var service = new SheetsService(new BaseClientService.Initializer()
     foreach (var sheet in spreadsheet.Sheets)
     {
         Console.WriteLine(sheet.Properties.Title);
-        if (sheet.Properties.Title.StartsWith("2023"))
+        if (sheet.Properties.Title.StartsWith("202"))
         {
             rangesForSheetsWithGameData.Add($"{sheet.Properties.Title}!A1:O17");
         }
@@ -46,49 +46,11 @@ using (var service = new SheetsService(new BaseClientService.Initializer()
     // PrintGamesFromSpreadsheet(spreadsheetWithGameData);
     // PrintRowDataAndGameRowDataFromSpreadsheet(spreadsheetWithGameData);
 
-    var games = GetGamesFromSpreadsheet(spreadsheetWithGameData);
-
-    var henryGamesWon = from game in games
-                        where game.Winners.Contains("Henry")
-                        select game;
-
-    var henryGamesLost = from game in games
-                         where game.Losers.Contains("Henry")
-                         select game;
-
-    var henryWinRate = 1.0 * henryGamesWon.Count() / (henryGamesWon.Count() + henryGamesLost.Count());
-
-    Console.WriteLine($"Henry's wins: {henryGamesWon.Count()}");
-    Console.WriteLine($"Henry's losses: {henryGamesLost.Count()}");
-    Console.WriteLine($"Henry's win rate: {Math.Round(henryWinRate, 3)}");
+    PrintHenryStatsFromSpreadsheet(spreadsheetWithGameData);
 
     Console.WriteLine();
 
-    var henryVsGelGamesWon = from game in games
-                             where game.Winners.Contains("Henry")
-                             where game.Losers.Contains("Gel")
-                             select game;
-
-    var henryVsGelGamesLost = from game in games
-                              where game.Losers.Contains("Henry")
-                              where game.Winners.Contains("Gel")
-                              select game;
-
-    var henryVsGelWinRate = 1.0 * henryVsGelGamesWon.Count() / (henryVsGelGamesWon.Count() + henryVsGelGamesLost.Count());
-
-    Console.WriteLine($"Henry vs Gel wins: {henryVsGelGamesWon.Count()}");
-    Console.WriteLine($"Henry vs Gel losses: {henryVsGelGamesLost.Count()}");
-    Console.WriteLine($"Henry vs Gel win rate: {Math.Round(henryVsGelWinRate, 3)}");
-
-    Console.WriteLine();
-
-    var players = GetPlayersFromSpreadsheet(spreadsheetWithGameData);
-
-    Console.WriteLine($"Number of players: {players.Count}");
-    foreach (var player in players)
-    {
-        Console.WriteLine(player);
-    }
+    PrintMoreStatsFromSpreadsheet(spreadsheetWithGameData);
 
     // Stop timing
     stopwatch.Stop();
@@ -183,4 +145,76 @@ static void PrintGames(string gameDate, GridData gridData)
         Console.WriteLine($"game.Losers: {string.Join(",", game.Losers)}");
         Console.WriteLine();
     }
+}
+
+static void PrintMoreStatsFromSpreadsheet(Spreadsheet spreadsheet)
+{
+    var games = GetGamesFromSpreadsheet(spreadsheet);
+    var players = GetPlayersFromSpreadsheet(spreadsheet);
+    var weeks = games.Select(game => game.Id.Split('.')[0]).Distinct();
+
+    Console.WriteLine($"Data current through: {weeks.Order().Last()}");
+    Console.WriteLine($"Number of players: {players.Count}");
+    Console.WriteLine($"Number of weeks: {weeks.Count()}");
+    Console.WriteLine($"Number of games: {games.Count}");
+    Console.WriteLine($"Player,WeeksPlayed,GamesPlayed");
+
+    foreach (var player in players)
+    {
+        var playerGamesPlayed = from game in games
+                                where game.Winners.Contains(player) || game.Losers.Contains(player)
+                                select game;
+        var playerWeeksPlayed = playerGamesPlayed.Select(game => game.Id.Split('.')[0]).Distinct();
+        Console.WriteLine($"{player},{playerWeeksPlayed.Count()},{playerGamesPlayed.Count()}");
+    }
+}
+
+static void PrintHenryStatsFromSpreadsheet(Spreadsheet spreadsheet)
+{
+    var games = GetGamesFromSpreadsheet(spreadsheet);
+
+    var henryGamesWon = from game in games
+                        where game.Winners.Contains("Henry")
+                        select game;
+
+    var henryGamesLost = from game in games
+                         where game.Losers.Contains("Henry")
+                         select game;
+
+    var henryWinRate = 1.0 * henryGamesWon.Count() / (henryGamesWon.Count() + henryGamesLost.Count());
+
+    var henryGamesPlayed = from game in games
+                           where game.Winners.Contains("Henry") || game.Losers.Contains("Henry")
+                           select game;
+
+    var henryWeeksPlayed = henryGamesPlayed.Select(game => game.Id.Split('.')[0]).Distinct();
+
+    Console.WriteLine($"Henry's wins: {henryGamesWon.Count()}");
+    Console.WriteLine($"Henry's losses: {henryGamesLost.Count()}");
+    Console.WriteLine($"Henry's win rate: {Math.Round(henryWinRate, 3)}");
+    Console.WriteLine($"Henry's henryWeeksPlayed: {henryWeeksPlayed}");
+    foreach (var week in henryWeeksPlayed)
+    {
+        Console.WriteLine(week);
+    }
+    Console.WriteLine($"Henry's henryWeeksPlayed: {henryWeeksPlayed}");
+
+
+    Console.WriteLine();
+
+    var henryVsGelGamesWon = from game in games
+                             where game.Winners.Contains("Henry")
+                             where game.Losers.Contains("Gel")
+                             select game;
+
+    var henryVsGelGamesLost = from game in games
+                              where game.Losers.Contains("Henry")
+                              where game.Winners.Contains("Gel")
+                              select game;
+
+    var henryVsGelWinRate = 1.0 * henryVsGelGamesWon.Count() / (henryVsGelGamesWon.Count() + henryVsGelGamesLost.Count());
+
+    Console.WriteLine($"Henry vs Gel wins: {henryVsGelGamesWon.Count()}");
+    Console.WriteLine($"Henry vs Gel losses: {henryVsGelGamesLost.Count()}");
+    Console.WriteLine($"Henry vs Gel win rate: {Math.Round(henryVsGelWinRate, 3)}");
 }
