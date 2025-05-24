@@ -26,17 +26,17 @@ using (var service = new SheetsService(new BaseClientService.Initializer()
 
     var rangesForSheetsWithGameData = new List<string>();
 
-    Console.WriteLine("All sheets in spreadsheet:");
+    // Console.WriteLine("All sheets in spreadsheet:");
     foreach (var sheet in spreadsheet.Sheets)
     {
-        Console.WriteLine(sheet.Properties.Title);
+        // Console.WriteLine(sheet.Properties.Title);
         if (sheet.Properties.Title.StartsWith("202"))
         {
             rangesForSheetsWithGameData.Add($"{sheet.Properties.Title}!A1:O17");
         }
     }
 
-    Console.WriteLine();
+    // Console.WriteLine();
 
     getSpreadsheetRequest.IncludeGridData = true;
     getSpreadsheetRequest.Ranges = rangesForSheetsWithGameData;
@@ -46,23 +46,27 @@ using (var service = new SheetsService(new BaseClientService.Initializer()
     // PrintGamesFromSpreadsheet(spreadsheetWithGameData);
     // PrintRowDataAndGameRowDataFromSpreadsheet(spreadsheetWithGameData);
 
-    PrintHenryStatsFromSpreadsheet(spreadsheetWithGameData);
+    // PrintHenryStatsFromSpreadsheet(spreadsheetWithGameData);
 
-    Console.WriteLine();
+    // Console.WriteLine();
 
-    PrintMoreStatsFromSpreadsheet(spreadsheetWithGameData);
+    PrintMoreStatsFromSpreadsheetForYear(spreadsheetWithGameData, "2023");
 
     // Stop timing
     stopwatch.Stop();
     Console.WriteLine("Time taken : {0}", stopwatch.Elapsed);
 }
 
-static IList<Game> GetGamesFromSpreadsheet(Spreadsheet spreadsheet)
+static IList<Game> GetGamesFromSpreadsheet(Spreadsheet spreadsheet, string? year = null)
 {
     var games = new List<Game>();
     foreach (var sheet in spreadsheet.Sheets)
     {
         var gameDate = sheet.Properties.Title;
+        if (year != null && !gameDate.Contains(year))
+        {
+            continue;
+        }
         var gridData = sheet.Data[0];
 
         var gameGridData = GameGridData.LoadFromGridData(gridData, gameDate);
@@ -72,12 +76,16 @@ static IList<Game> GetGamesFromSpreadsheet(Spreadsheet spreadsheet)
     return games;
 }
 
-static IList<string> GetPlayersFromSpreadsheet(Spreadsheet spreadsheet)
+static IList<string> GetPlayersFromSpreadsheet(Spreadsheet spreadsheet, string? year = null)
 {
     var players = new SortedSet<string>();
     foreach (var sheet in spreadsheet.Sheets)
     {
         var gameDate = sheet.Properties.Title;
+        if (year != null && !gameDate.Contains(year))
+        {
+            continue;
+        }
         var gridData = sheet.Data[0];
 
         var gameGridData = GameGridData.LoadFromGridData(gridData, gameDate);
@@ -154,6 +162,29 @@ static void PrintMoreStatsFromSpreadsheet(Spreadsheet spreadsheet)
     var weeks = games.Select(game => game.Id.Split('.')[0]).Distinct();
 
     Console.WriteLine($"Data current through: {weeks.Order().Last()}");
+    Console.WriteLine($"Number of players: {players.Count}");
+    Console.WriteLine($"Number of weeks: {weeks.Count()}");
+    Console.WriteLine($"Number of games: {games.Count}");
+    Console.WriteLine($"Player,WeeksPlayed,GamesPlayed");
+
+    foreach (var player in players)
+    {
+        var playerGamesPlayed = from game in games
+                                where game.Winners.Contains(player) || game.Losers.Contains(player)
+                                select game;
+        var playerWeeksPlayed = playerGamesPlayed.Select(game => game.Id.Split('.')[0]).Distinct();
+        Console.WriteLine($"{player},{playerWeeksPlayed.Count()},{playerGamesPlayed.Count()}");
+    }
+}
+
+static void PrintMoreStatsFromSpreadsheetForYear(Spreadsheet spreadsheet, string year)
+{
+    var games = GetGamesFromSpreadsheet(spreadsheet, year);
+    var players = GetPlayersFromSpreadsheet(spreadsheet, year);
+    var weeks = games.Select(game => game.Id.Split('.')[0]).Distinct();
+
+    Console.WriteLine($"Data current through: {weeks.Order().Last()}");
+    Console.WriteLine($"Year: {year}");
     Console.WriteLine($"Number of players: {players.Count}");
     Console.WriteLine($"Number of weeks: {weeks.Count()}");
     Console.WriteLine($"Number of games: {games.Count}");
